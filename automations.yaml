@@ -1,0 +1,132 @@
+  - alias: Front Lights
+    trigger:
+      - platform: state
+        entity_id: sensor.driveway_motion_detected
+        from: 'False'
+        to: 'True'
+      - platform: state
+        entity_id: binary_sensor.ring_front_door_motion
+        from: 'off'
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.ring_front_door_ding
+        from: 'off'
+        to: 'on'
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: switch.outside_lights
+          state: 'off'
+          for:
+            seconds: 12
+        - condition: time
+          after: "20:00:00"
+          before: "07:00:00"
+    action:
+      - service: homeassistant.turn_on
+        entity_id: switch.outside_lights
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.outside_motion_light_on
+
+
+#turn off the front lights after 3 minutes of no motion only if the lights were turned on by the motion automation
+  - alias: "Turn off lights after motion"
+    trigger:
+      - platform: state
+        entity_id: sensor.driveway_motion_detected
+        to: 'False'
+        for:
+          minutes: 3
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: input_boolean.outside_motion_light_on
+          state: 'on'
+        - condition: state
+          entity_id: switch.outside_lights
+          state: 'on'
+    action:
+      - service: switch.turn_off
+        entity_id: switch.outside_lights
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.outside_motion_light_on
+
+#turn off the input boolean if lights are manually turned off
+  - alias: "Switch turned off manually"
+    trigger: 
+      - platform: state
+        entity_id: switch.outside_lights
+        to: 'off'
+    condition:
+      - condition: state
+        entity_id: input_boolean.outside_motion_light_on
+        state: 'on'
+    action:
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.outside_motion_light_on
+
+#turn off air conditioner if house fan is turned off
+  - alias: "turn off a/c if air fan is turned on"
+    trigger: 
+      - platform: state
+        entity_id: switch.house_fan
+        from: 'off'
+        to: 'on'
+    condition: 
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: climate.downstairs
+          state: 'cool'
+        - condition: state
+          entity_id: climate.upstairs
+          state: 'cool'
+    action:
+      - service: climate.set_operation_mode
+        data:
+          entity_id: climate.downstairs
+          operation_mode: 'off'
+      - service: notify.all
+        data:
+          title: "Notification"
+          message: "Turned off A/C when house fan was turned on"
+
+  - alias: "Garage Door Open Notifications"
+    trigger:
+      - platform: state
+        entity_id: sensor.garage_door_status 
+        from: 'False'
+        to: 'True'
+    action:
+      - service: notify.all
+        data:
+          title: "Notification"
+          message: "Garage Door Open"
+  
+  - alias: "Garage Door Closed Notifications"
+    trigger:
+      - platform: state
+        entity_id: sensor.garage_door_status
+        from: 'True'
+        to: 'False'
+    action:
+      - service: notify.all
+        data:
+          title: "Notification"
+          message: "Garage Door Closed"
+
+  - alias: "Garage Door Open 2H"
+    trigger:
+      - platform: state
+        entity_id: sensor.garage_door_status
+        to: 'True'
+        for:
+          hours: 2
+    action:
+      - service: notify.all
+        data:
+          title: "Notification"
+          message: "Garage Door Open for 2 Hours"
+ 

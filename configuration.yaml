@@ -1,0 +1,212 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: !secret lat
+  longitude: !secret long
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: 0
+  # metric for Metric, imperial for Imperial
+  unit_system: imperial
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: America/Los_Angeles
+  # Customization file
+  customize: !include customize.yaml
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+custom_updater:
+
+# Show the introduction message on startup.
+#introduction:
+
+# Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+http:
+  api_password: !secret api_password
+  ssl_certificate: /config/fullchain.pem
+  ssl_key: /config/privkey.pem
+  ip_ban_enabled: true
+  login_attempts_threshold: 3
+  base_url: murrayha.processtechag.com:8123
+
+# Discover some devices automatically
+
+input_boolean:
+  outside_motion_light_on:
+    name: "Camera motion turned on light"
+    initial: off
+  garage_door_open:
+    name: "Garage Door Open"
+    initial: off
+  house_fan_auto_turnoff:
+    name: "House Fan Auto Turn-Off Enabled"
+    initial: off
+
+
+discovery:
+
+homekit:
+  filter:
+    include_domains:
+      - switch
+      - cover
+ 
+input_number:
+  hf1:
+    name: House Fan Timer
+    initial: 90
+    min: 15
+    max: 360
+    step: 15 
+    mode: slider
+
+google_assistant:
+  project_id: home-assistant-223623
+  api_key: !secret google_api_key
+  exposed_domains:
+    - switch
+    - cover
+  entity_config:
+    switch.garage_door:
+      name: "garage door"
+      aliases:
+        - Garage_door
+      room: garage
+
+juicenet:
+  access_token: !secret juicenet_token
+
+weather:
+  - platform: darksky
+    api_key: !secret darksky_api_key
+
+ring:
+  username: !secret ring_username
+  password: !secret ring_password
+
+binary_sensor:
+  - platform: ring
+
+tplink:
+  discovery: false
+  switch:
+    - host: 10.200.230.34
+    - host: 10.200.230.53
+
+ecobee:
+  api_key: !secret ecobee_api
+
+
+amcrest:
+  - host: 10.200.200.95
+    username: !secret amcrest_username
+    password: !secret amcrest_password_95
+    name: "Driveway"
+    sensors:
+      - motion_detector
+    switches:
+      - motion_detection
+      - motion_recording
+    scan_interval: 5
+  - host: 10.200.200.166
+    username: !secret amcrest_username
+    password: !secret amcrest_password_166
+    name: "Upstairs_Outside"
+    sensors:
+      - motion_detector
+    switches:
+      - motion_detection
+    scan_interval: 5
+
+ios:
+
+notify:
+  - name: all
+    platform: group
+    services:
+      - service: ios_mmurrays_iphone
+      - service: ios_lindseys_iphone
+
+mqtt:
+  password: !secret mqtt_password
+
+envisalink:
+  host: 10.200.230.29
+  panel_type: DSC
+  user_name: !secret envisalink_user
+  password: !secret envisalink_password
+  port: 4025
+  evl_version: 3
+  keepalive_interval: 60
+  zonedump_interval: 30
+  timeout: 10
+  panic_type: Police
+  zones:
+    1:
+      name: 'Outside Doors'
+      type: 'opening'
+    2:
+      name: 'Windows'
+      type: 'opening'
+    3:
+      name: 'Back Slider'
+      type: 'opening'
+    6:
+      name: 'Upstairs Bathroom'
+      type: 'opening'
+    7:
+      name: 'Downstairs Motion'
+      type: 'motion'
+  partitions:
+    1:
+      name: 'Home Alarm'
+
+# Sensors
+sensor:
+  # Weather prediction
+  - platform: yr
+  - platform: amcrest
+  - platform: ring
+  - platform: solaredge
+    api_key: !secret solaredge_api
+    site_id: !secret solaredge_siteid
+    name: SolarEdge
+    monitored_conditions:
+      - current_power
+      - energy_today
+  - platform: template
+    sensors:
+      solaredge_energy_today_kw:
+        value_template: '{{(states.sensor.solaredge_energy_today.state | float / 1000) | round(2)}}'
+      garage_door_status:
+        value_template: >
+          {{ 0.0 < states('sensor.garage_door_sensor') | float < 0.3 }} 
+
+cover:
+  - platform: template
+    covers:
+      garage_door_cover:
+        friendly_name: "Garage Door"
+        value_template: "{{ states('sensor.garage_door_status') }}"
+        open_cover: 
+          service: switch.turn_on
+          data:
+            entity_id: switch.garage_door
+        close_cover:
+          service: switch.turn_on
+          data:
+            entity_id: switch.garage_door
+
+camera:
+  - platform: amcrest
+  - platform: ring
+
+# Text to speech
+tts:
+  - platform: google_translate
+    service_name: google_say
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
