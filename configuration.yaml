@@ -24,8 +24,8 @@ custom_updater:
 # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
 http:
   api_password: !secret api_password
-  ssl_certificate: /config/fullchain.pem
-  ssl_key: /config/privkey.pem
+  ssl_certificate: !secret ssl_certificate
+  ssl_key: !secret ssl_key
   ip_ban_enabled: true
   login_attempts_threshold: 3
   base_url: murrayha.processtechag.com:8123
