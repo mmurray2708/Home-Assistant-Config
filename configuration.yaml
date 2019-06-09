@@ -30,6 +30,9 @@ http:
 
 # Discover some devices automatically
 
+hacs:
+  token: !secret github_token
+
 input_boolean:
   outside_motion_light_on:
     name: "Camera motion turned on light"
