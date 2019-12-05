@@ -1,132 +1,204 @@
-  - alias: Front Lights
-    trigger:
-      - platform: state
-        entity_id: sensor.driveway_motion_detected
-        from: 'False'
-        to: 'True'
-      - platform: state
-        entity_id: binary_sensor.ring_front_door_motion
-        from: 'off'
-        to: 'on'
-      - platform: state
-        entity_id: binary_sensor.ring_front_door_ding
-        from: 'off'
-        to: 'on'
-    condition:
-      condition: and
+- alias: Front Lights
+  trigger:
+  - platform: state
+    entity_id: sensor.driveway_motion_detected
+    from: 'False'
+    to: 'True'
+  - platform: state
+    entity_id: binary_sensor.ring_front_door_motion
+    from: 'off'
+    to: 'on'
+  - platform: state
+    entity_id: binary_sensor.ring_front_door_ding
+    from: 'off'
+    to: 'on'
+  condition:
+    condition: and
+    conditions:
+    - condition: state
+      entity_id: switch.outside_lights
+      state: 'off'
+      for:
+        seconds: 12
+    - condition: or
       conditions:
-        - condition: state
-          entity_id: switch.outside_lights
-          state: 'off'
-          for:
-            seconds: 12
-        - condition: time
-          after: "20:00:00"
-          before: "07:00:00"
-    action:
-      - service: homeassistant.turn_on
-        entity_id: switch.outside_lights
-      - service: input_boolean.turn_on
-        entity_id: input_boolean.outside_motion_light_on
-
-
-#turn off the front lights after 3 minutes of no motion only if the lights were turned on by the motion automation
-  - alias: "Turn off lights after motion"
-    trigger:
-      - platform: state
-        entity_id: sensor.driveway_motion_detected
-        to: 'False'
-        for:
-          minutes: 3
-    condition:
-      condition: and
-      conditions:
-        - condition: state
-          entity_id: input_boolean.outside_motion_light_on
-          state: 'on'
-        - condition: state
-          entity_id: switch.outside_lights
-          state: 'on'
-    action:
-      - service: switch.turn_off
-        entity_id: switch.outside_lights
-      - service: input_boolean.turn_off
-        entity_id: input_boolean.outside_motion_light_on
-
-#turn off the input boolean if lights are manually turned off
-  - alias: "Switch turned off manually"
-    trigger: 
-      - platform: state
-        entity_id: switch.outside_lights
-        to: 'off'
-    condition:
-      - condition: state
-        entity_id: input_boolean.outside_motion_light_on
-        state: 'on'
-    action:
-      - service: input_boolean.turn_off
-        entity_id: input_boolean.outside_motion_light_on
-
-#turn off air conditioner if house fan is turned off
-  - alias: "turn off a/c if air fan is turned on"
-    trigger: 
-      - platform: state
-        entity_id: switch.house_fan
-        from: 'off'
-        to: 'on'
-    condition: 
-      condition: or
-      conditions:
-        - condition: state
-          entity_id: climate.downstairs
-          state: 'cool'
-        - condition: state
-          entity_id: climate.upstairs
-          state: 'cool'
-    action:
-      - service: climate.set_operation_mode
-        data:
-          entity_id: climate.downstairs
-          operation_mode: 'off'
-      - service: notify.all
-        data:
-          title: "Notification"
-          message: "Turned off A/C when house fan was turned on"
-
-  - alias: "Garage Door Open Notifications"
-    trigger:
-      - platform: state
-        entity_id: sensor.garage_door_status 
-        from: 'False'
-        to: 'True'
-    action:
-      - service: notify.all
-        data:
-          title: "Notification"
-          message: "Garage Door Open"
-  
-  - alias: "Garage Door Closed Notifications"
-    trigger:
-      - platform: state
-        entity_id: sensor.garage_door_status
-        from: 'True'
-        to: 'False'
-    action:
-      - service: notify.all
-        data:
-          title: "Notification"
-          message: "Garage Door Closed"
-
-  - alias: "Garage Door Open 2H"
-    trigger:
-      - platform: state
-        entity_id: sensor.garage_door_status
-        to: 'True'
-        for:
-          hours: 2
-    action:
-      - service: notify.all
-        data:
-          title: "Notification"
-          message: "Garage Door Open for 2 Hours"
- 
+      - condition: sun
+        after: sunset
+        after_offset: -00:30:00
+      - condition: sun
+        before: sunrise
+  action:
+  - service: homeassistant.turn_on
+    entity_id: switch.outside_lights
+  - service: input_boolean.turn_on
+    entity_id: input_boolean.outside_motion_light_on
+  id: fccf0c1be5ed4c76ab7456301e147fc2
+- alias: Turn off lights after motion
+  trigger:
+  - platform: state
+    entity_id: sensor.driveway_motion_detected
+    to: 'False'
+    for:
+      minutes: 3
+  condition:
+    condition: and
+    conditions:
+    - condition: state
+      entity_id: input_boolean.outside_motion_light_on
+      state: 'on'
+    - condition: state
+      entity_id: switch.outside_lights
+      state: 'on'
+  action:
+  - service: switch.turn_off
+    entity_id: switch.outside_lights
+  - service: input_boolean.turn_off
+    entity_id: input_boolean.outside_motion_light_on
+  id: 66c419d79a654d3ab91f402ad23aecbf
+- alias: Switch turned off manually
+  trigger:
+  - platform: state
+    entity_id: switch.outside_lights
+    to: 'off'
+  condition:
+  - condition: state
+    entity_id: input_boolean.outside_motion_light_on
+    state: 'on'
+  action:
+  - service: input_boolean.turn_off
+    entity_id: input_boolean.outside_motion_light_on
+  id: 538d3ea80c8f4a6fa0cfe822f3ae1cef
+- alias: turn off a/c if air fan is turned on
+  trigger:
+  - platform: state
+    entity_id: switch.house_fan
+    from: 'off'
+    to: 'on'
+  condition:
+    condition: or
+    conditions:
+    - condition: state
+      entity_id: climate.downstairs
+      state: cool
+    - condition: state
+      entity_id: climate.upstairs
+      state: cool
+  action:
+  - service: climate.set_hvac_mode
+    data:
+      entity_id: climate.downstairs
+      hvac_mode: 'off'
+  - service: notify.all
+    data:
+      title: Notification
+      message: Turned off A/C when house fan was turned on
+  id: 178d3e8b061c47bd92dbf09aaddd51a6
+- alias: Garage Door Open Notifications
+  trigger:
+  - platform: state
+    entity_id: sensor.garage_door_status
+    from: 'False'
+    to: 'True'
+  action:
+  - service: notify.all
+    data:
+      title: Notification
+      message: Garage Door Open
+  id: bde0e7340de24f0dbe1aca404c46aeb7
+- alias: Garage Door Closed Notifications
+  trigger:
+  - platform: state
+    entity_id: sensor.garage_door_status
+    from: 'True'
+    to: 'False'
+  action:
+  - service: notify.all
+    data:
+      title: Notification
+      message: Garage Door Closed
+  id: ff680e249e0b472e94b7d313bb1e99c3
+- alias: Garage Door Open 2H
+  trigger:
+  - platform: state
+    entity_id: sensor.garage_door_status
+    to: 'True'
+    for:
+      hours: 2
+  action:
+  - service: notify.all
+    data:
+      title: Notification
+      message: Garage Door Open for 2 Hours
+  id: f1fb097a4a8848e38ff8ae4c2a5de52d
+- alias: Garage Door Closes at 9pm
+  trigger:
+  - platform: time
+    at: '22:00:00'
+  condition:
+  - condition: state
+    entity_id: cover.garage_door_cover
+    state: open
+  action:
+  - service: cover.close_cover
+    entity_id: cover.garage_door_cover
+  - service: notify.all
+    data:
+      title: Notification
+      message: Garage Door Auto Close at 9pm
+  id: f95086997a9f4db6aaa011a7e009d15d
+- alias: Turn on A/C when hot
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.downstairs_temperature
+    above: 82
+  condition:
+  - condition: state
+    entity_id: climate.downstairs
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.vacation
+    state: 'off'
+  action:
+  - service: climate.set_hvac_mode
+    data:
+      entity_id: climate.downstairs
+      hvac_mode: cool
+  id: 5f736ffe4323498aad42af69145e2417
+- alias: Vacation Lights
+  trigger:
+  - platform: sun
+    event: sunset
+  condition:
+  - condition: state
+    entity_id: input_boolean.vacation
+    state: 'on'
+  action:
+  - service: homeassistant.turn_on
+    entity_id: group.living_room
+  - delay: 05:00:00
+  - service: homeassistant.turn_off
+    entity_id: group.living_room
+  id: 7cd0fc41634a4703aa839c241e58a36f
+- alias: New Tree Irrigation
+  trigger:
+  - platform: time
+    at: 05:00:00
+  action:
+  - service: homeassistant.turn_on
+    entity_id: switch.zone_5
+  id: 39b940b2df4e42b4ba79d2c91fb9f70c
+- id: '1575075687923'
+  alias: christmas lights
+  description: ''
+  trigger:
+  - event: sunset
+    platform: sun
+  condition: []
+  action:
+  - data:
+      entity_id: group.all_christmas_lights
+    service: homeassistant.turn_on
+  - delay: 06:00:00
+  - data:
+      entity_id: group.all_christmas_lights
+    service: homeassistant.turn_off

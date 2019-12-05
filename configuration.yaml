@@ -12,12 +12,52 @@ homeassistant:
   time_zone: America/Los_Angeles
   # Customization file
   customize: !include customize.yaml
-
+  auth_mfa_modules:
+    - type: notify
+#  auth_providers:
+#    - type: homeassistant  
 # Configure a default setup of Home Assistant (frontend, api, etc)
 default_config:
 
+frontend:
+  themes: !include_dir_merge_named themes/
+  extra_html_url:
+    - /local/custom_ui/state-card-floorplan.html
+
+panel_custom:
+  - name: Floorplan
+    sidebar_title: Floorplan
+    sidebar_icon: mdi:home
+    url_path: floorplan
+    config: !include floorplan.yaml
+
+meross_cloud:
+  username: !secret meross_username
+  password: !secret meross_password
+
+media_player:
+  - platform: spotify
+    client_id: !secret spotify_client_id
+    client_secret: !secret spotify_client_secret
+
+#image_processing:
+#  - platform: tensorflow
+#    source: 
+#      - entity_id: camera.upstairs_outside
+#      - entity_id: camera.driveway
+#    file_out:
+#      - "/config/www/{{ camera_entity.split('.')[1] }}_latest.jpg"
+#    model:
+#      graph: /config/tensorflow/frozen_inference_graph.pb
+#      categories:
+#        - category: person
+
 hacs:
   token: !secret github_token
+
+recorder:
+  purge_keep_days: 30
+  db_url: mysql://ha:Murray9825@10.200.200.122/ha?charset=utf8
 
 
 # Show the introduction message on startup.
@@ -26,15 +66,19 @@ hacs:
 
 # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
 http:
-  api_password: !secret api_password
   ssl_certificate: !secret ssl_certificate
   ssl_key: !secret ssl_key
-  ip_ban_enabled: true
+  ip_ban_enabled: false
   login_attempts_threshold: 3
-  base_url: murrayha.processtechag.com:8123
-
+  base_url: https://murrayha.processtechag.com:8123
+  cors_allowed_origins:
+    - http://10.200.200.122:5050
 # Discover some devices automatically
 
+
+rachio:
+  api_key: !secret rachio_api
+  manual_run_mins: 60 
 
 input_boolean:
   outside_motion_light_on:
@@ -46,16 +90,28 @@ input_boolean:
   house_fan_auto_turnoff:
     name: "House Fan Auto Turn-Off Enabled"
     initial: off
-
+  vacation:
+    name: "Vacation Mode"
+    initial: off
 
 discovery:
+
+speedtestdotnet:
+  server_id: 18531
+  manual: true
 
 homekit:
   filter:
     include_domains:
       - switch
       - cover
- 
+      - climate
+      - group
+    exclude_entities:
+      - switch.driveway_motion_detection
+      - switch.driveway_motion_recording
+      - switch.garage_door
+      - switch.upstairs_outside_motion_detection 
 input_number:
   hf1:
     name: House Fan Timer
@@ -71,6 +127,8 @@ google_assistant:
   exposed_domains:
     - switch
     - cover
+    - group
+
   entity_config:
     switch.garage_door:
       name: "garage door"
@@ -91,15 +149,17 @@ ring:
 
 binary_sensor:
   - platform: ring
+  - platform: mqtt
+    state_topic: dummy/floorplan/sensor
+    name: Floorplan
 
 tplink:
   discovery: false
   switch:
     - host: 10.200.230.34
     - host: 10.200.230.53
+    - host: 10.200.230.55
 
-ecobee:
-  api_key: !secret ecobee_api
 
 
 amcrest:
@@ -109,9 +169,6 @@ amcrest:
     name: "Driveway"
     sensors:
       - motion_detector
-    switches:
-      - motion_detection
-      - motion_recording
     scan_interval: 5
   - host: 10.200.200.166
     username: !secret amcrest_username
@@ -119,8 +176,6 @@ amcrest:
     name: "Upstairs_Outside"
     sensors:
       - motion_detector
-    switches:
-      - motion_detection
     scan_interval: 5
 
 ios:
@@ -129,8 +184,8 @@ notify:
   - name: all
     platform: group
     services:
-      - service: ios_mmurrays_iphone
-      - service: ios_lindseys_iphone
+      - service: mobile_app_mmurrays_iphone
+      - service: mobile_app_lindseys_iphone
 
 mqtt:
   password: !secret mqtt_password
@@ -169,16 +224,13 @@ envisalink:
 # Sensors
 sensor:
   # Weather prediction
+  - platform: airvisual
+    api_key: !secret airvisual_api_key
+    monitored_conditions: 
+      - us
   - platform: yr
   - platform: amcrest
   - platform: ring
-  - platform: solaredge
-    api_key: !secret solaredge_api
-    site_id: !secret solaredge_siteid
-    name: SolarEdge
-    monitored_conditions:
-      - current_power
-      - energy_today
   - platform: template
     sensors:
       solaredge_energy_today_kw:
@@ -186,6 +238,67 @@ sensor:
       garage_door_status:
         value_template: >
           {{ 0.0 < states('sensor.garage_door_sensor') | float < 0.3 }} 
+  - platform: darksky
+    api_key: !secret darksky_api_key
+    forecast:
+      - 1
+    hourly_forecast:
+      - 0
+      - 1
+    monitored_conditions:
+      - summary
+      - icon
+      - temperature
+      - apparent_temperature
+      - temperature_min
+      - temperature_max 
+      - humidity
+      - precip_probability
+      - precip_type
+      - precip_intensity
+      - wind_speed
+      - wind_bearing
+      - pressure
+      - dew_point
+      - precip_accumulation
+      - wind_gust
+      - nearest_storm_distance
+      - nearest_storm_bearing
+      - sunrise_time
+      - sunset_time
+      - moon_phase
+      - alerts
+  - platform: systemmonitor
+    resources:
+      - type: disk_use_percent
+        arg: /home
+      - type: memory_use
+      - type: load_1m
+      - type: load_5m
+      - type: load_15m
+      - type: processor_use
+      - type: last_boot
+  - platform: rest
+    resource: !secret weatherlink_api_key
+    scan_interval: 900
+    name: weatherlink
+    json_attributes:
+    - temp_f
+    - davis_current_observation
+    value_template: '{{ value_json.weatherlink }}'
+  - platform: template
+    sensors:
+      farm_temp:
+        friendly_name: 'Farm Temp'
+        unit_of_measurement: 'F'
+        device_class: 'temperature'
+        value_template: "{{ state_attr('sensor.weatherlink', 'temp_f') }}"
+  - platform: template
+    sensors:
+      farm_storm_total:
+        friendly_name: 'Farm Storm Total'
+        unit_of_measurement: 'in'
+        value_template: '{{ states.sensor.weatherlink.attributes["davis_current_observation"]["rain_storm_in"] }}'
 
 cover:
   - platform: template
@@ -205,11 +318,28 @@ cover:
 camera:
   - platform: amcrest
   - platform: ring
+#  - platform: local_file
+#    file_path: /config/www/driveway_latest.jpg
+#    name: Driveway_object_detect
+#  - platform: local_file
+#    file_path: /config/www/upstairs_outside_latest.jpg
+#    name: Front_object_detect
+
 
 # Text to speech
 tts:
   - platform: google_translate
     service_name: google_say
+
+zone:
+  - name: Solid Networks
+    latitude: 37.720768
+    longitude: -121.096960
+   
+  - name: Big Valley
+    latitude: 37.699684
+    longitude: -121.006674
+    radius: 300
 
 logger:
 

@@ -1,0 +1,23 @@
+  living_room:
+    entities: switch.lights, switch.living_room_lamp
+    name: Living Room Lights
+
+  all_outside_lights:
+    entities: switch.shed_light, switch.outside_lights
+    name: All Outside Lights
+    all: true
+
+  all_christmas_lights:
+    entities: switch.outside, switch.outdoor_plug
+    name: All Christmas Lights
+    all: true
+
+  alarm_lights:
+    entities: switch.lights, switch.living_room_lamp, switch.bedroom_light, swtitch.shed_light, switch.outside_lights
+    name: Alarm Lights
+    all: true
+
+  zones:
+    name: Zones
+    entities:
+      - binary_sensor.floorplan

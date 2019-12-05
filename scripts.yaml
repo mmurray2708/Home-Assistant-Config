@@ -1,14 +1,25 @@
-  turn_off_house_fan_after_time:
-    sequence:
-      - service: input_boolean.turn_on
-        data:
-          entity_id: input_boolean.house_fan_auto_turnoff  
-      - delay:
-          minutes: '{{ states.input_number.hf1.state | int }}'
-      - service: switch.turn_off
-        data:
-          entity_id: switch.house_fan
-      - service: input_boolean.turn_off
-        data:
-          entity_id: input_boolean.house_fan_auto_turnoff
-
+turn_off_house_fan_after_time:
+  sequence:
+  - service: input_boolean.turn_on
+    data:
+      entity_id: input_boolean.house_fan_auto_turnoff
+  - delay:
+      minutes: '{{ states.input_number.hf1.state | int }}'
+  - service: switch.turn_off
+    data:
+      entity_id: switch.house_fan
+  - service: input_boolean.turn_off
+    data:
+      entity_id: input_boolean.house_fan_auto_turnoff
+turn_off_vacations_lights:
+  sequence:
+  - delay:
+      hours: 6
+  - service: homeassistant.turn_off
+    data:
+      entity_id: group.living_room
+'1575488065433':
+  alias: Run Speed Test
+  sequence:
+  - data: {}
+    service: speedtestdotnet.speedtest
