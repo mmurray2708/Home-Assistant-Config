@@ -24,6 +24,9 @@ frontend:
   extra_html_url:
     - /local/custom_ui/state-card-floorplan.html
 
+ifttt:
+  key: !secret ifttt_api_key
+
 panel_custom:
   - name: Floorplan
     sidebar_title: Floorplan
@@ -39,6 +42,12 @@ media_player:
   - platform: spotify
     client_id: !secret spotify_client_id
     client_secret: !secret spotify_client_secret
+  - platform: samsungtv_custom
+    host: 10.200.200.251
+    mac:  00:7c:2d:26:ce:67
+    port: 8001
+    sourcelist: '{"FireTV": "KEY_HDMI1", "Chromecast": "KEY_HDMI2"}'
+    protocol: ws
 
 #image_processing:
 #  - platform: tensorflow
@@ -66,11 +75,11 @@ recorder:
 
 # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
 http:
-  ssl_certificate: !secret ssl_certificate
-  ssl_key: !secret ssl_key
+#  ssl_certificate: !secret ssl_certificate
+#  ssl_key: !secret ssl_key
   ip_ban_enabled: false
   login_attempts_threshold: 3
-  base_url: https://murrayha.processtechag.com:8123
+#  base_url: https://murrayha.processtechag.com:8123
   cors_allowed_origins:
     - http://10.200.200.122:5050
 # Discover some devices automatically
@@ -121,20 +130,85 @@ input_number:
     step: 15 
     mode: slider
 
-google_assistant:
-  project_id: home-assistant-223623
-  api_key: !secret google_api_key
-  exposed_domains:
-    - switch
-    - cover
-    - group
+switch:
 
-  entity_config:
-    switch.garage_door:
-      name: "garage door"
-      aliases:
-        - Garage_door
-      room: garage
+  - platform: mqtt
+    name: "Freeze"
+    state_topic: "aqualinkd/Freeze_Protect"
+    command_topic: "aqualinkd/Freeze_Protect/set"
+    qos: 1
+    payload_on: "0"
+    payload_off: "1"
+    retain: false
+  - platform: mqtt
+    name: "Filter Pump"
+    state_topic: "aqualinkd/Filter_Pump"
+    command_topic: "aqualinkd/Filter_Pump/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+  - platform: mqtt
+    name: "Spa Mode"
+    state_topic: "aqualinkd/Spa_Mode"
+    command_topic: "aqualinkd/Spa_Mode/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+  - platform: mqtt
+    name: “Aux1”
+    state_topic: "aqualinkd/Aux_1"
+    command_topic: "aqualinkd/Aux_1/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+  - platform: mqtt
+    name: “Aux2”
+    state_topic: "aqualinkd/Aux_2"
+    command_topic: "aqualinkd/Aux_2/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false  
+  - platform: mqtt
+    name: “Aux3”
+    state_topic: "aqualinkd/Aux_3"
+    command_topic: "aqualinkd/Aux_3/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+  - platform: mqtt
+    name: "Pool Heater"
+    state_topic: "aqualinkd/Pool_Heater"
+    command_topic: "aqualinkd/Pool_Heater/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+  - platform: mqtt
+    name: "Spa Heater"
+    state_topic: "aqualinkd/Spa_Heater"
+    command_topic: "aqualinkd/Spa_Heater/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+#google_assistant:
+#  project_id: home-assistant-223623
+#  api_key: !secret google_api_key
+#  exposed_domains:
+#    - switch
+#    - cover
+#    - group
+#  entity_config:
+#    switch.garage_door:
+#      name: "garage door"
+#      aliases:
+#        - Garage_door
+#      room: garage
 
 juicenet:
   access_token: !secret juicenet_token
@@ -152,6 +226,37 @@ binary_sensor:
   - platform: mqtt
     state_topic: dummy/floorplan/sensor
     name: Floorplan
+  - platform: mqtt
+    state_topic: "aqualinkd/Pool_Heater/enabled"
+    name: "Pool Heat"
+    qos: 0
+    payload_on: "1"
+    payload_off: "0"        
+  - platform: mqtt
+    state_topic: "aqualinkd/Spa_Heater/enabled"
+    name: "Spa Heat"
+    qos: 0
+    payload_on: "1"
+    payload_off: "0"    
+  - platform: mqtt
+    state_topic: "aqualinkd/Freeze_Protect"
+    name: "Freeze"
+    qos: 0
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    state_topic: "aqualinkd/Alive"
+    name: "AqualinkD"
+    qos: 0
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    state_topic: "aqualinkd/Battery"
+    name: "Battery"
+    qos: 0
+    payload_on: "1"
+    payload_off: "0"
+
 
 tplink:
   discovery: false
@@ -159,7 +264,7 @@ tplink:
     - host: 10.200.230.34
     - host: 10.200.230.53
     - host: 10.200.230.55
-
+    - host: 10.200.230.37
 
 
 amcrest:
@@ -188,7 +293,7 @@ notify:
       - service: mobile_app_lindseys_iphone
 
 mqtt:
-  password: !secret mqtt_password
+  broker: 10.200.200.122
 
 envisalink:
   host: 10.200.230.29
@@ -299,6 +404,90 @@ sensor:
         friendly_name: 'Farm Storm Total'
         unit_of_measurement: 'in'
         value_template: '{{ states.sensor.weatherlink.attributes["davis_current_observation"]["rain_storm_in"] }}'
+  - platform: mqtt
+    state_topic: "aqualinkd/Aux_1"
+    name: "Aux1"
+    value_template: "{{ value }}"    
+  - platform: mqtt
+    state_topic: "aqualinkd/Temperature/Air"
+    name: "Air Temp"
+    value_template: "{{ value_json }}"    
+    unit_of_measurement: "°F"   
+  - platform: mqtt
+    state_topic: "aqualinkd/Temperature/Spa"
+    name: "Spa Temp"
+    value_template: "{{ value_json }}"    
+    unit_of_measurement: "°F"  
+  - platform: mqtt
+    state_topic: "aqualinkd/Temperature/Pool"
+    name: "Pool Temp"
+    value_template: "{{ value_json }}"    
+    unit_of_measurement: "°F"     
+  - platform: mqtt
+    state_topic: "aqualinkd/Pool_Heater/setpoint"
+    name: "Pool Temp Set"
+    value_template: "{{ value_json }}"    
+    unit_of_measurement: "°F"     
+  - platform: mqtt
+    state_topic: "aqualinkd/Spa_Heater/setpoint"
+    name: "Spa Temp Set"
+    value_template: "{{ value_json }}"    
+    unit_of_measurement: "°F"
+  - platform: mqtt
+    state_topic: "aqualinkd/Filter_Pump/RPM"
+    name: "Pump Speed"
+    value_template: "{{ value_json }}"    
+    unit_of_measurement: "RPM"
+  - platform: mqtt
+    state_topic: "aqualinkd/Filter_Pump/Watts"
+    name: "Pump Power"
+    value_template: "{{ value_json }}"
+    unit_of_measurement: "Watts"
+
+climate:
+  - platform: mqtt
+    name: Pool Heater
+    modes:
+      - "off"
+      - "heat"
+    send_if_off: true
+    initial: 70
+    power_command_topic: "aqualinkd/Pool_Heater/set"
+    payload_on: "1"
+    payload_off: "0"
+    current_temperature_topic: "aqualinkd/Temperature/Pool"
+    min_temp: 70
+    max_temp: 90
+    mode_command_topic: "aqualinkd/Pool_Heater/set"
+    mode_state_topic: "aqualinkd/Pool_Heater"
+    mode_state_template: >-
+      {% set values1 = { '0':'off', '1':'heat'} %}
+      {{ values1[value] if value in values1.keys() else 'off' }}
+    temperature_command_topic: "aqualinkd/Pool_Heater/setpoint/set"
+    temperature_state_topic: "aqualinkd/Pool_Heater/setpoint"
+    temperature_state_template: "{{ value_json }}"
+
+  - platform: mqtt
+    name: Spa Heater
+    modes:
+      - "off"
+      - "heat"
+    send_if_off: true
+    initial: 100
+    power_command_topic: "aqualinkd/Spa_Heater/set"
+    payload_on: "1"
+    payload_off: "0"
+    current_temperature_topic: "aqualinkd/Temperature/Spa"
+    min_temp: 80
+    max_temp: 104
+    mode_command_topic: "aqualinkd/Spa_Heater/set"
+    mode_state_topic: "aqualinkd/Spa_Heater/enabled"
+    mode_state_template: >-
+      {% set values2 = { '0':'off', '1':'heat'} %}
+      {{ values2[value] if value in values2.keys() else 'off' }}
+    temperature_command_topic: "aqualinkd/Spa_Heater/setpoint/set"
+    temperature_state_topic: "aqualinkd/Spa_Heater/setpoint"
+    temperature_state_template: "{{ value_json }}"
 
 cover:
   - platform: template
@@ -340,6 +529,11 @@ zone:
     latitude: 37.699684
     longitude: -121.006674
     radius: 300
+
+  - name: Home
+    latitude: !secret lat
+    longitude: !secret long
+    radius: 200
 
 logger:
 

@@ -8,7 +8,7 @@
     all: true
 
   all_christmas_lights:
-    entities: switch.outside, switch.outdoor_plug
+    entities: switch.outside, switch.outdoor_plug, light.wled
     name: All Christmas Lights
     all: true
 
@@ -21,3 +21,54 @@
     name: Zones
     entities:
       - binary_sensor.floorplan
+
+  family:
+    name: Family
+    entities: 
+      - person.lindsey
+      - person.matt
+
+  ecobee:
+    name: All Ecobee Thermostats
+    entities: climate.upstairs, climate.downstairs
+  ARS:
+    name: Pool
+    view: yes
+    entities:
+      - sensor.Air_Temp
+      - sensor.Pool_Temp
+      - sensor.Spa_Temp
+      - binary_sensor.AqualinkD
+      - sensor.battery_check
+      - binary_sensor.Pool_Heat
+      - binary_sensor.Spa_Heat
+      - binary_sensor.Freeze
+      - group.PL1
+      - group.SP1
+      - group.TC1
+
+  PL1:
+    name: Pool Control
+    view: no
+    entities:
+      - switch.Filter_Pump
+      - switch.Cleaner
+      - switch.Low_Speed
+      - light.Pool_Light    
+      - switch.Waterfall      
+
+  SP1:
+    name: Spa Control
+    view: no
+    entities:    
+      - switch.Spa_Mode
+      - switch.Spa_Blower
+      - light.Spa_Light
+
+  TC1:
+    name: Temp Control
+    view: no
+    entities:   
+      - climate.Pool_Heater
+      - climate.Spa_Heater
+      - climate.Freeze_Protect

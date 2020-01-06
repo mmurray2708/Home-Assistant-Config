@@ -24,7 +24,6 @@
       conditions:
       - condition: sun
         after: sunset
-        after_offset: -00:30:00
       - condition: sun
         before: sunrise
   action:
@@ -202,3 +201,20 @@
   - data:
       entity_id: group.all_christmas_lights
     service: homeassistant.turn_off
+- id: '1576694076060'
+  alias: TV Alert
+  description: ''
+  trigger:
+  - entity_id: group.family
+    from: home
+    platform: state
+    to: not_home
+  condition:
+  - condition: state
+    entity_id: switch.samsung_8_series_65
+    state: 'on'
+  action:
+  - data:
+      message: TV on / Nobody Home
+      title: Notification
+    service: notify.all
