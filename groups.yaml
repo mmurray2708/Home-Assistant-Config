@@ -1,5 +1,5 @@
   living_room:
-    entities: switch.lights, switch.living_room_lamp
+    entities: switch.living_room_lamp_1_mss110_main_channel, switch.living_room_lamp_2_mss110_main_channel
     name: Living Room Lights
 
   all_outside_lights:
@@ -33,7 +33,6 @@
     entities: climate.upstairs, climate.downstairs
   ARS:
     name: Pool
-    view: yes
     entities:
       - sensor.Air_Temp
       - sensor.Pool_Temp
@@ -49,7 +48,6 @@
 
   PL1:
     name: Pool Control
-    view: no
     entities:
       - switch.Filter_Pump
       - switch.Cleaner
@@ -59,7 +57,6 @@
 
   SP1:
     name: Spa Control
-    view: no
     entities:    
       - switch.Spa_Mode
       - switch.Spa_Blower
@@ -67,7 +64,6 @@
 
   TC1:
     name: Temp Control
-    view: no
     entities:   
       - climate.Pool_Heater
       - climate.Spa_Heater

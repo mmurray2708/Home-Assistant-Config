@@ -1,0 +1,9 @@
+- id: '1595105512171'
+  name: Living Room Lamps
+  entities:
+    switch.living_room_lamp_1_mss110_main_channel:
+      friendly_name: living room lamp 1 (mss110) - Main channel
+      state: 'off'
+    switch.living_room_lamp_2_mss110_main_channel:
+      friendly_name: living room lamp 2 (mss110) - Main channel
+      state: 'off'

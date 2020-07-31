@@ -23,3 +23,9 @@ turn_off_vacations_lights:
   sequence:
   - data: {}
     service: speedtestdotnet.speedtest
+disable_kids_internet:
+  alias: Disable Kids Internet
+  mode: single
+  sequence:
+  - data: {}
+    service: rest_command.kids_internet_off

@@ -24,8 +24,20 @@ frontend:
   extra_html_url:
     - /local/custom_ui/state-card-floorplan.html
 
+pi_hole:
+  - host: 10.200.200.122
+    api_key: !secret pi_hole_api_key
+
 ifttt:
   key: !secret ifttt_api_key
+
+spotify:
+  client_id: !secret spotify_client_id
+  client_secret: !secret spotify_client_secret
+
+influxdb:
+  host: 10.200.200.122
+  
 
 panel_custom:
   - name: Floorplan
@@ -38,16 +50,6 @@ meross_cloud:
   username: !secret meross_username
   password: !secret meross_password
 
-media_player:
-  - platform: spotify
-    client_id: !secret spotify_client_id
-    client_secret: !secret spotify_client_secret
-  - platform: samsungtv_custom
-    host: 10.200.200.251
-    mac:  00:7c:2d:26:ce:67
-    port: 8001
-    sourcelist: '{"FireTV": "KEY_HDMI1", "Chromecast": "KEY_HDMI2"}'
-    protocol: ws
 
 #image_processing:
 #  - platform: tensorflow
@@ -85,9 +87,9 @@ http:
 # Discover some devices automatically
 
 
-rachio:
-  api_key: !secret rachio_api
-  manual_run_mins: 60 
+#rachio:
+#  api_key: !secret rachio_api
+#  manual_run_mins: 60 
 
 input_boolean:
   outside_motion_light_on:
@@ -102,25 +104,13 @@ input_boolean:
   vacation:
     name: "Vacation Mode"
     initial: off
+  garage_light_master:
+    name: "Garage Lights Master Switch"
+    initial: off
 
 discovery:
 
-speedtestdotnet:
-  server_id: 18531
-  manual: true
 
-homekit:
-  filter:
-    include_domains:
-      - switch
-      - cover
-      - climate
-      - group
-    exclude_entities:
-      - switch.driveway_motion_detection
-      - switch.driveway_motion_recording
-      - switch.garage_door
-      - switch.upstairs_outside_motion_detection 
 input_number:
   hf1:
     name: House Fan Timer
@@ -157,7 +147,7 @@ switch:
     payload_off: "0"
     retain: false
   - platform: mqtt
-    name: “Aux1”
+    name: “Waterfall”
     state_topic: "aqualinkd/Aux_1"
     command_topic: "aqualinkd/Aux_1/set"
     qos: 1
@@ -165,7 +155,7 @@ switch:
     payload_off: "0"
     retain: false
   - platform: mqtt
-    name: “Aux2”
+    name: “Spa Blower”
     state_topic: "aqualinkd/Aux_2"
     command_topic: "aqualinkd/Aux_2/set"
     qos: 1
@@ -173,9 +163,17 @@ switch:
     payload_off: "0"
     retain: false  
   - platform: mqtt
-    name: “Aux3”
+    name: “Lights”
     state_topic: "aqualinkd/Aux_3"
     command_topic: "aqualinkd/Aux_3/set"
+    qos: 1
+    payload_on: "1"
+    payload_off: "0"
+    retain: false
+  - platform: mqtt
+    name: “Cleaner”
+    state_topic: "aqualinkd/Aux_4"
+    command_topic: "aqualinkd/Aux_4/set"
     qos: 1
     payload_on: "1"
     payload_off: "0"
@@ -210,6 +208,14 @@ switch:
 #        - Garage_door
 #      room: garage
 
+light:
+  - platform: group
+    name: Garage LED Lights
+    entities:
+      - light.garage_light_1
+      - light.garage_light_2
+      - light.garage_light_3
+
 juicenet:
   access_token: !secret juicenet_token
 
@@ -217,12 +223,14 @@ weather:
   - platform: darksky
     api_key: !secret darksky_api_key
 
-ring:
-  username: !secret ring_username
-  password: !secret ring_password
+#ring:
+#  username: !secret ring_username
+#  password: !secret ring_password
 
 binary_sensor:
-  - platform: ring
+#  - platform: ring
+  - platform: wyzesense
+    device: auto
   - platform: mqtt
     state_topic: dummy/floorplan/sensor
     name: Floorplan
@@ -264,7 +272,7 @@ tplink:
     - host: 10.200.230.34
     - host: 10.200.230.53
     - host: 10.200.230.55
-    - host: 10.200.230.37
+#    - host: 10.200.230.37
 
 
 amcrest:
@@ -272,15 +280,17 @@ amcrest:
     username: !secret amcrest_username
     password: !secret amcrest_password_95
     name: "Driveway"
-    sensors:
-      - motion_detector
+    binary_sensors:
+      - motion_detected
+      - online
     scan_interval: 5
   - host: 10.200.200.166
     username: !secret amcrest_username
     password: !secret amcrest_password_166
     name: "Upstairs_Outside"
-    sensors:
-      - motion_detector
+    binary_sensors:
+      - motion_detected
+      - online
     scan_interval: 5
 
 ios:
@@ -328,21 +338,39 @@ envisalink:
 
 # Sensors
 sensor:
-  # Weather prediction
-  - platform: airvisual
-    api_key: !secret airvisual_api_key
-    monitored_conditions: 
-      - us
+  - platform: influxdb
+    host: 10.200.200.122
+    queries:
+      - name: Outside High 24h
+        unit_of_measurement: '°F'
+        value_template: '{{ value | round(1) }}'
+        group_function: max
+        where: '"entity_id" = ''rs191_outdoor_temp'' and time > now() - 24h'
+        measurement: '"°F"'
+        field: value
+        database: home_assistant
+      - name: Outside Low 24h
+        unit_of_measurement: '°F'
+        value_template: '{{ value | round(1) }}'
+        group_function: min
+        where: '"entity_id" = ''rs191_outdoor_temp'' and time > now() - 24h'
+        measurement: '"°F"'
+        field: value
+        database: home_assistant
   - platform: yr
   - platform: amcrest
-  - platform: ring
+#  - platform: ring
   - platform: template
     sensors:
       solaredge_energy_today_kw:
         value_template: '{{(states.sensor.solaredge_energy_today.state | float / 1000) | round(2)}}'
       garage_door_status:
         value_template: >
-          {{ 0.0 < states('sensor.garage_door_sensor') | float < 0.3 }} 
+          {{ 0.0 < states('sensor.garage_door_sensor') | float < 0.3 }}
+      small_garage_door_status:
+        value_template: >
+          {{ 0.0 < states('sensor.garage_door_3_sensor') | float < 0.3 }}
+ 
   - platform: darksky
     api_key: !secret darksky_api_key
     forecast:
@@ -390,13 +418,30 @@ sensor:
     json_attributes:
     - temp_f
     - davis_current_observation
+    - relative_humidity
+    - pressure_in
+    - wind_mph
+    - wind_dir
     value_template: '{{ value_json.weatherlink }}'
+  - platform: template
+    sensors:
+      farm_hum:
+        unit_of_measurement: '%'
+        value_template: "{{ state_attr('sensor.weatherlink', 'relative_humidity') }}"
+  - platform: template
+    sensors:
+      farm_wind_speed:
+        unit_of_measurement: 'mph'
+        value_template: "{{ state_attr('sensor.weatherlink', 'wind_mph') }}"
+  - platform: template
+    sensors:
+      farm_wind_dir:
+        value_template: "{{ state_attr('sensor.weatherlink', 'wind_dir') }}"
   - platform: template
     sensors:
       farm_temp:
         friendly_name: 'Farm Temp'
         unit_of_measurement: 'F'
-        device_class: 'temperature'
         value_template: "{{ state_attr('sensor.weatherlink', 'temp_f') }}"
   - platform: template
     sensors:
@@ -503,10 +548,24 @@ cover:
           service: switch.turn_on
           data:
             entity_id: switch.garage_door
+  - platform: template
+    covers:
+      small_garage_door_cover:
+        friendly_name: "Small Garage Door"
+        value_template: "{{ states('sensor.small_garage_door_status') }}"
+        open_cover:
+          service: switch.turn_on
+          data:
+            entity_id: switch.garage_door_3
+        close_cover:
+          service: switch.turn_on
+          data:
+            entity_id: switch.garage_door_3
+
 
 camera:
   - platform: amcrest
-  - platform: ring
+#  - platform: ring
 #  - platform: local_file
 #    file_path: /config/www/driveway_latest.jpg
 #    name: Driveway_object_detect
@@ -519,6 +578,7 @@ camera:
 tts:
   - platform: google_translate
     service_name: google_say
+    base_url: http://10.200.200.122:8123
 
 zone:
   - name: Solid Networks
@@ -534,6 +594,17 @@ zone:
     latitude: !secret lat
     longitude: !secret long
     radius: 200
+
+rest_command:
+  kids_internet_off:
+    url: https://api.meraki.com/api/v0/networks/L_624874448297658269/groupPolicies/104
+    method: PUT
+    headers:
+      X-Cisco-Meraki-API-Key: !secret meraki_api_key
+      Accept: '*/*'
+    content_type: 'application/json'
+    payload: '{ "groupPolicyId": "104", "name": "Kids Device", "scheduling": { "enabled": false, "monday": { "active": true, "from": "00:00", "to": "24:00" }, "tuesday": { "active": true, "from": "00:00", "to": "24:00" }, "wednesday": { "active": true, "from": "00:00", "to": "24:00" }, "thursday": { "active": true, "from": "00:00", "to": "24:00" }, "friday": { "active": true, "from": "00:00", "to": "24:00" }, "saturday": { "active": true, "from": "00:00", "to": "24:00" }, "sunday": { "active": true, "from": "00:00", "to": "24:00" } }, "bandwidth": { "settings": "network default", "bandwidthLimits": { "limitUp": 5120, "limitDown": 5120 } }, "firewallAndTrafficShaping": { "settings": "custom", "trafficShapingRules": [], "l3FirewallRules": [ { "comment": "Deny All", "policy": "deny", "protocol": "any", "destPort": "any", "destCidr": "any" } ], "l7FirewallRules": [] }, "contentFiltering": { "allowedUrlPatterns": { "settings": "network default", "patterns": [] }, "blockedUrlPatterns": { "settings": "network default", "patterns": [] }, "blockedUrlCategories": { "settings": "append", "categories": [ "meraki:contentFiltering/category/68", "meraki:contentFiltering/category/10", "meraki:contentFiltering/category/76", "meraki:contentFiltering/category/53", "meraki:contentFiltering/category/8", "meraki:contentFiltering/category/18", "meraki:contentFiltering/category/27", "meraki:contentFiltering/category/54", "meraki:contentFiltering/category/46", "meraki:contentFiltering/category/64", "meraki:contentFiltering/category/78", "meraki:contentFiltering/category/32", "meraki:contentFiltering/category/62", "meraki:contentFiltering/category/73", "meraki:contentFiltering/category/37", "meraki:contentFiltering/category/58", "meraki:contentFiltering/category/44", "meraki:contentFiltering/category/71", "meraki:contentFiltering/category/19", "meraki:contentFiltering/category/43", "meraki:contentFiltering/category/48" ] } }, "splashAuthSettings": "network default", "vlanTagging": { "settings": "network default" }, "bonjourForwarding": { "settings": "network default", "rules": [] } }'
+    verify_ssl: true
 
 logger:
 

@@ -1,15 +1,15 @@
 - alias: Front Lights
   trigger:
   - platform: state
-    entity_id: sensor.driveway_motion_detected
-    from: 'False'
-    to: 'True'
-  - platform: state
-    entity_id: binary_sensor.ring_front_door_motion
+    entity_id: binary_sensor.driveway_motion_detected
     from: 'off'
     to: 'on'
   - platform: state
-    entity_id: binary_sensor.ring_front_door_ding
+    entity_id: binary_sensor.front_door_motion
+    from: 'off'
+    to: 'on'
+  - platform: state
+    entity_id: binary_sensor.front_door_ding
     from: 'off'
     to: 'on'
   condition:
@@ -35,8 +35,8 @@
 - alias: Turn off lights after motion
   trigger:
   - platform: state
-    entity_id: sensor.driveway_motion_detected
-    to: 'False'
+    entity_id: binary_sensor.driveway_motion_detected
+    to: 'off'
     for:
       minutes: 3
   condition:
@@ -92,18 +92,22 @@
       title: Notification
       message: Turned off A/C when house fan was turned on
   id: 178d3e8b061c47bd92dbf09aaddd51a6
-- alias: Garage Door Open Notifications
+- id: bde0e7340de24f0dbe1aca404c46aeb7
+  alias: Garage Door Open Notifications
   trigger:
-  - platform: state
-    entity_id: sensor.garage_door_status
+  - entity_id: sensor.garage_door_status
     from: 'False'
+    platform: state
     to: 'True'
   action:
-  - service: notify.all
-    data:
-      title: Notification
+  - data:
       message: Garage Door Open
-  id: bde0e7340de24f0dbe1aca404c46aeb7
+      title: Notification
+    service: notify.all
+  - data:
+      message: Garage door is opening
+    entity_id: media_player.kitchen
+    service: tts.google_say
 - alias: Garage Door Closed Notifications
   trigger:
   - platform: state
@@ -215,6 +219,92 @@
     state: 'on'
   action:
   - data:
+      data:
+        push:
+          category: TV_ON
       message: TV on / Nobody Home
       title: Notification
     service: notify.all
+- id: '1580195739276'
+  alias: turn on front light automation if off
+  description: ''
+  trigger:
+  - at: '20:00:00'
+    platform: time
+  condition:
+  - condition: state
+    entity_id: automation.front_lights
+    state: 'off'
+  action:
+  - entity_id: automation.front_lights
+    service: automation.turn_on
+- id: '1584652732600'
+  alias: Shed Motion Alert
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.wyzesense_779d657b
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  - after: '21:00:00'
+    before: 07:00:00
+    condition: time
+  action:
+  - data:
+      message: Shed Motion Detected
+      title: Notification
+    service: notify.mobile_app_mmurrays_iphone
+- id: '1584653777830'
+  alias: Garage Door Open/Close
+  description: ''
+  trigger:
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: Open Garage Door
+  action:
+  - data: {}
+    entity_id: cover.garage_door_cover
+    service: cover.toggle
+- id: '1584668052363'
+  alias: Turn TV off
+  description: ''
+  trigger:
+  - event_data:
+      actionName: TV_OFF
+    event_type: ios.notification_action_fired
+    platform: event
+  action:
+  - data: {}
+    entity_id: switch.samsung_8_series_65
+    service: homeassistant.turn_off
+- id: '1587681867813'
+  alias: Turn on Garage Lights
+  description: ''
+  trigger:
+  - event: sunset
+    platform: sun
+  condition: []
+  action:
+  - data:
+      brightness: 150
+      rgb_color:
+      - 0
+      - 0
+      - 255
+    entity_id: light.wled
+    service: light.turn_on
+- id: '1588353701888'
+  alias: Open/Close Small Garage Door
+  description: ''
+  trigger:
+  - event_data:
+      actionName: Open Small Garage Door
+    event_type: ios.action_fired
+    platform: event
+  condition: []
+  action:
+  - data: {}
+    entity_id: cover.small_garage_door_cover
+    service: cover.toggle
